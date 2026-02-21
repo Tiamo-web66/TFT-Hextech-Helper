@@ -73,11 +73,8 @@ import {
     parseStageStringToEnum,
     isValidStageFormat,
 } from "./tft";
-<<<<<<< HEAD
 import { windowFinder, WindowStatusResult } from "./tft/utils/WindowFinder";
 import { settingsStore, WindowOcclusionBehavior } from "./utils/SettingsStore";
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 import type {
     IdentifiedEquip,
     BenchUnit,
@@ -205,17 +202,11 @@ class TftOperator {
     // ============================================================================
 
     /**
-<<<<<<< HEAD
      * 初始化操作器（同步版本，保持向后兼容）
      * @description 使用屏幕中心计算窗口位置（假设窗口居中）
      *              新代码应优先使用 initAsync() 获取精确的窗口位置
      * @returns 是否初始化成功
      * @deprecated 建议使用 initAsync() 方法获取精确的窗口位置
-=======
-     * 初始化操作器
-     * @description 计算游戏窗口位置，LOL 窗口默认居中显示
-     * @returns 是否初始化成功
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
      */
     public init(): boolean {
         try {
@@ -242,11 +233,7 @@ class TftOperator {
             mouseController.setGameWindowOrigin(this.gameWindowRegion);
 
             logger.info(`[TftOperator] 屏幕尺寸: ${screenWidth}x${screenHeight}`);
-<<<<<<< HEAD
             logger.info(`[TftOperator] 游戏基准点(居中假设): (${originX}, ${originY})`);
-=======
-            logger.info(`[TftOperator] 游戏基准点: (${originX}, ${originY})`);
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 
             return true;
         } catch (e: any) {
@@ -257,7 +244,6 @@ class TftOperator {
     }
 
     /**
-<<<<<<< HEAD
      * 异步初始化操作器（推荐）
      * @description 使用 WindowFinder 动态查找游戏窗口位置
      *              支持窗口非居中的情况，更加精确
@@ -362,8 +348,6 @@ class TftOperator {
     }
 
     /**
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
      * 获取当前游戏阶段
      * @description 通过 OCR 识别游戏阶段 (如 "2-1", "3-5")
      * @returns 游戏阶段结果，包含阶段类型和原始文本

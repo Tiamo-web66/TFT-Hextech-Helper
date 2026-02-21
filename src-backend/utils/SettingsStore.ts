@@ -5,7 +5,6 @@ import {LogMode} from "../types/AppTypes";
 
 type WindowBounds = Pick<Rectangle, 'x' | 'y' | 'width' | 'height'>;
 
-<<<<<<< HEAD
 /**
  * 窗口遮挡行为枚举
  * @description 当游戏窗口被遮挡或失去焦点时的处理方式
@@ -17,8 +16,6 @@ export enum WindowOcclusionBehavior {
     PAUSE_AND_WARN = 'pause_and_warn',
 }
 
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 // 日志自动清理阈值的可选值，0 表示"从不"自动清理
 export type LogAutoCleanThreshold = 0 | 100 | 200 | 500 | 1000;
 
@@ -81,10 +78,7 @@ interface AppSettings {
     toggleHotkeyAccelerator: string,  //  挂机开关快捷键（Electron Accelerator 格式，如 "F1", "Ctrl+Shift+F1"）
     stopAfterGameHotkeyAccelerator: string,  //  "本局结束后停止"快捷键
     showDebugPage: boolean,  //  是否显示调试页面
-<<<<<<< HEAD
     windowOcclusionBehavior: WindowOcclusionBehavior,  //  窗口遮挡时的行为（自动聚焦 / 暂停提醒）
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
     window: {
         bounds: WindowBounds | null, // 上次关闭时的窗口信息
         isMaximized: boolean,   //  上次关闭是否最大化
@@ -113,10 +107,7 @@ class SettingsStore {
             toggleHotkeyAccelerator: 'F1',  //  默认快捷键是 F1
             stopAfterGameHotkeyAccelerator: 'F2',  //  默认快捷键是 F2
             showDebugPage: false,       //  默认隐藏调试页面
-<<<<<<< HEAD
             windowOcclusionBehavior: WindowOcclusionBehavior.AUTO_FOCUS,  //  默认自动聚焦游戏窗口
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             window: {
                 bounds: null,           //  第一次启动，默认为null
                 isMaximized: false     //  默认不最大化窗口

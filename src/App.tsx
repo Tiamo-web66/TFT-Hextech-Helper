@@ -2,12 +2,8 @@ import './App.css'
 import {router} from "./Router.tsx";
 import {RouterProvider} from "react-router-dom";
 import {ThemeProvider} from "styled-components";
-<<<<<<< HEAD
 import {lightTheme, darkTheme} from "./styles/theme.ts";  // 喵~ 同时导入两套主题
 import {settingsStore} from "./stores/settingsStore.ts";  // 喵~ 导入设置管理器
-=======
-import {lightTheme} from "./styles/theme.ts";
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 
 import {GlobalStyle} from "./styles/GlobalStyle.ts";
 import {Toaster} from "./components/toast/Toast.tsx";
@@ -23,7 +19,6 @@ interface ToastPayload {
 }
 
 function App() {
-<<<<<<< HEAD
     // 喵~ 1. 创建主题状态，根据 settingsStore 决定使用哪套主题
     const [isDarkMode, setIsDarkMode] = useState(false);
     const currentTheme = isDarkMode ? darkTheme : lightTheme;
@@ -49,13 +44,6 @@ function App() {
         return unsubscribe;  // 组件卸载时取消订阅
     }, []);
 
-=======
-    const currentTheme = lightTheme;
-    
-    // 首次启动弹窗状态
-    const [showFirstLaunchModal, setShowFirstLaunchModal] = useState(false);
-
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
     // 监听主进程发来的 Toast 事件
     useEffect(() => {
         // @ts-ignore - window.ipc 由 preload.ts 暴露

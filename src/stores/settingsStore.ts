@@ -1,7 +1,6 @@
 /**
  * 全局设置存储 - 单例模式
  * 作为前端与后端 SettingsStore 通信的唯一入口
-<<<<<<< HEAD
  *
  * 使用方式：
  * 1. settingsStore.subscribe(callback) - 订阅变化
@@ -20,38 +19,22 @@ export enum WindowOcclusionBehavior {
     PAUSE_AND_WARN = 'pause_and_warn',
 }
 
-=======
- * 
- * 使用方式：
- * 1. settingsStore.subscribe(callback) - 订阅变化
- * 2. settingsStore.setShowDebugPage(value) - 修改值并通知订阅者
- * 
- * 注意：其他组件不应该直接调用 window.settings，应该通过本 store 访问
- */
-
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 // 设置变化监听器类型
 type SettingsListener = (settings: SettingsState) => void;
 
 // 设置状态接口（前端关心的设置项）
 interface SettingsState {
     showDebugPage: boolean;
-<<<<<<< HEAD
     darkMode: boolean;  // 喵~ 新增：暗黑模式开关
     windowOcclusionBehavior: WindowOcclusionBehavior;  // 窗口遮挡时的行为
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 }
 
 class SettingsStore {
     // 内部状态（从后端同步的缓存）
     private state: SettingsState = {
         showDebugPage: false,
-<<<<<<< HEAD
         darkMode: false,  // 喵~ 默认为浅色模式
         windowOcclusionBehavior: WindowOcclusionBehavior.AUTO_FOCUS,  // 默认自动聚焦
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
     };
     
     // 订阅者列表
@@ -71,7 +54,6 @@ class SettingsStore {
             // 通过通用 settings API 读取后端设置
             const showDebugPage = await window.settings.get<boolean>('showDebugPage');
             this.state.showDebugPage = showDebugPage;
-<<<<<<< HEAD
 
             // 喵~ 读取暗黑模式设置（如果后端没有存过，则默认 false）
             const darkMode = await window.settings.get<boolean>('darkMode');
@@ -81,8 +63,6 @@ class SettingsStore {
             const windowOcclusionBehavior = await window.settings.get<WindowOcclusionBehavior>('windowOcclusionBehavior');
             this.state.windowOcclusionBehavior = windowOcclusionBehavior || WindowOcclusionBehavior.AUTO_FOCUS;
 
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             this.notifyListeners();
         } catch (error) {
             console.error('[SettingsStore] 初始化失败:', error);
@@ -104,7 +84,6 @@ class SettingsStore {
     }
 
     /**
-<<<<<<< HEAD
      * 喵~ 获取 darkMode 的值
      */
     getDarkMode(): boolean {
@@ -119,19 +98,13 @@ class SettingsStore {
     }
 
     /**
-=======
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
      * 设置 showDebugPage 并通知所有订阅者
      * @param value 新的值
      * @param persist 是否同步到后端（默认 true）
      */
     async setShowDebugPage(value: boolean, persist = true): Promise<void> {
         this.state.showDebugPage = value;
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
         // 同步到后端 SettingsStore
         if (persist) {
             try {
@@ -140,7 +113,6 @@ class SettingsStore {
                 console.error('[SettingsStore] 保存设置失败:', error);
             }
         }
-<<<<<<< HEAD
 
         // 通知所有订阅者
         this.notifyListeners();
@@ -184,9 +156,6 @@ class SettingsStore {
             }
         }
 
-=======
-        
->>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
         // 通知所有订阅者
         this.notifyListeners();
     }

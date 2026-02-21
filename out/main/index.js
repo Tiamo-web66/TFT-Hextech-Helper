@@ -14,7 +14,7 @@ import path__default from "path";
 import WebSocket from "ws";
 import https from "https";
 import axios from "axios";
-import { Region, screen, Point, mouse, Button } from "@nut-tree-fork/nut-js";
+import { Region, screen, Point, mouse, Button, getWindows, getActiveWindow } from "@nut-tree-fork/nut-js";
 import sharp from "sharp";
 import cv from "@techstark/opencv-js";
 import { createWorker, PSM } from "tesseract.js";
@@ -10891,6 +10891,321 @@ function fixMisrecognizedStage(text) {
   }
   return text;
 }
+const GAME_WINDOW_TITLES = [
+  "League of Legends",
+  // 游戏主窗口标题
+  "League of Legends (TM) Client"
+  // 有时候带 TM
+];
+class WindowFinder {
+  static instance;
+  /** 缓存的游戏窗口引用 */
+  cachedWindow = null;
+  /** 缓存的窗口位置 */
+  cachedOrigin = null;
+  /** 上次查找时间戳 */
+  lastFindTime = 0;
+  /** 最小查找间隔 (ms)，避免频繁调用 */
+  MIN_FIND_INTERVAL = 1e3;
+  /** 最小状态检查间隔 (ms) */
+  MIN_STATUS_CHECK_INTERVAL = 500;
+  /** 上次状态检查时间戳 */
+  lastStatusCheckTime = 0;
+  constructor() {
+  }
+  /**
+   * 获取 WindowFinder 单例
+   */
+  static getInstance() {
+    if (!WindowFinder.instance) {
+      WindowFinder.instance = new WindowFinder();
+    }
+    return WindowFinder.instance;
+  }
+  /**
+   * 查找游戏窗口并返回窗口位置
+   * @param forceRefresh 是否强制刷新（忽略缓存）
+   * @returns 窗口查找结果
+   *
+   * @description
+   * 查找逻辑：
+   * 1. 获取所有窗口列表
+   * 2. 遍历查找标题匹配的窗口
+   * 3. 验证窗口尺寸是否符合预期 (1024x768)
+   * 4. 返回窗口左上角坐标作为基准点
+   */
+  async findGameWindow(forceRefresh = false) {
+    const now = Date.now();
+    if (!forceRefresh && this.cachedWindow && this.cachedOrigin && now - this.lastFindTime < this.MIN_FIND_INTERVAL) {
+      return {
+        found: true,
+        origin: this.cachedOrigin,
+        title: "(cached)"
+      };
+    }
+    try {
+      const windows = await getWindows();
+      logger.debug(`[WindowFinder] 获取到 ${windows.length} 个窗口`);
+      for (const win2 of windows) {
+        const title = await win2.getTitle();
+        const isMatch = GAME_WINDOW_TITLES.some(
+          (pattern) => title.includes(pattern)
+        );
+        if (isMatch) {
+          const region = await win2.getRegion();
+          const sizeValid = this.validateWindowSize(region);
+          if (!sizeValid) {
+            logger.warn(
+              `[WindowFinder] 找到窗口 "${title}" 但尺寸不符: ${region.width}x${region.height} (期望 ${GAME_WIDTH}x${GAME_HEIGHT})`
+            );
+            continue;
+          }
+          const origin = {
+            x: region.left,
+            y: region.top
+          };
+          this.cachedWindow = win2;
+          this.cachedOrigin = origin;
+          this.lastFindTime = now;
+          logger.info(
+            `[WindowFinder] 找到游戏窗口: "${title}" 位置: (${origin.x}, ${origin.y}), 尺寸: ${region.width}x${region.height}`
+          );
+          return {
+            found: true,
+            origin,
+            title
+          };
+        }
+      }
+      this.clearCache();
+      logger.warn("[WindowFinder] 未找到游戏窗口，请确保游戏已启动");
+      return {
+        found: false,
+        origin: null,
+        title: "",
+        error: "未找到游戏窗口"
+      };
+    } catch (e) {
+      this.clearCache();
+      logger.error(`[WindowFinder] 查找窗口异常: ${e.message}`);
+      return {
+        found: false,
+        origin: null,
+        title: "",
+        error: e.message
+      };
+    }
+  }
+  /**
+   * 检查游戏窗口状态
+   * @description 检查窗口是否存在、是否在前台、位置是否变化
+   * @param lastKnownOrigin 上次已知的窗口位置（用于比较位置变化）
+   * @returns 窗口状态结果
+   */
+  async checkWindowStatus(lastKnownOrigin) {
+    const now = Date.now();
+    if (now - this.lastStatusCheckTime < this.MIN_STATUS_CHECK_INTERVAL) {
+      return {
+        exists: this.cachedWindow !== null,
+        isForeground: false,
+        // 无法确定，返回 false
+        positionChanged: false,
+        currentOrigin: this.cachedOrigin
+      };
+    }
+    this.lastStatusCheckTime = now;
+    try {
+      const findResult = await this.findGameWindow();
+      if (!findResult.found) {
+        return {
+          exists: false,
+          isForeground: false,
+          positionChanged: false,
+          currentOrigin: null
+        };
+      }
+      const activeWindow = await getActiveWindow();
+      const activeTitle = await activeWindow.getTitle();
+      const isForeground = GAME_WINDOW_TITLES.some(
+        (pattern) => activeTitle.includes(pattern)
+      );
+      let positionChanged = false;
+      if (lastKnownOrigin && findResult.origin) {
+        positionChanged = lastKnownOrigin.x !== findResult.origin.x || lastKnownOrigin.y !== findResult.origin.y;
+      }
+      if (positionChanged) {
+        logger.info(
+          `[WindowFinder] 检测到窗口位置变化: (${lastKnownOrigin?.x}, ${lastKnownOrigin?.y}) -> (${findResult.origin?.x}, ${findResult.origin?.y})`
+        );
+      }
+      return {
+        exists: true,
+        isForeground,
+        positionChanged,
+        currentOrigin: findResult.origin
+      };
+    } catch (e) {
+      logger.error(`[WindowFinder] 检查窗口状态异常: ${e.message}`);
+      return {
+        exists: false,
+        isForeground: false,
+        positionChanged: false,
+        currentOrigin: null
+      };
+    }
+  }
+  /**
+   * 尝试聚焦游戏窗口
+   * @description 将游戏窗口置于前台
+   * @returns 是否成功聚焦
+   */
+  async focusGameWindow() {
+    try {
+      if (!this.cachedWindow) {
+        const findResult = await this.findGameWindow(true);
+        if (!findResult.found) {
+          logger.warn("[WindowFinder] 无法聚焦：未找到游戏窗口");
+          return false;
+        }
+      }
+      const success = await this.cachedWindow.focus();
+      if (success) {
+        logger.info("[WindowFinder] 已聚焦游戏窗口");
+      } else {
+        logger.warn("[WindowFinder] 聚焦游戏窗口失败");
+      }
+      return success;
+    } catch (e) {
+      logger.error(`[WindowFinder] 聚焦窗口异常: ${e.message}`);
+      return false;
+    }
+  }
+  /**
+   * 获取当前缓存的窗口位置
+   * @description 快速获取缓存位置，不触发新的窗口查找
+   */
+  getCachedOrigin() {
+    return this.cachedOrigin;
+  }
+  /**
+   * 清除缓存
+   * @description 在窗口丢失或需要强制刷新时调用
+   */
+  clearCache() {
+    this.cachedWindow = null;
+    this.cachedOrigin = null;
+    this.lastFindTime = 0;
+    logger.debug("[WindowFinder] 缓存已清除");
+  }
+  /**
+   * 验证窗口尺寸是否符合预期
+   * @param region 窗口区域
+   * @returns 尺寸是否有效
+   *
+   * @description
+   * TFT 游戏窗口固定为 1024x768，但实际窗口可能有边框
+   * 允许一定的误差范围 (±10 像素)
+   */
+  validateWindowSize(region) {
+    const tolerance = 10;
+    const widthValid = Math.abs(region.width - GAME_WIDTH) <= tolerance;
+    const heightValid = Math.abs(region.height - GAME_HEIGHT) <= tolerance;
+    return widthValid && heightValid;
+  }
+}
+const windowFinder = WindowFinder.getInstance();
+var LogMode = /* @__PURE__ */ ((LogMode2) => {
+  LogMode2["SIMPLE"] = "SIMPLE";
+  LogMode2["DETAILED"] = "DETAILED";
+  return LogMode2;
+})(LogMode || {});
+var WindowOcclusionBehavior = /* @__PURE__ */ ((WindowOcclusionBehavior2) => {
+  WindowOcclusionBehavior2["AUTO_FOCUS"] = "auto_focus";
+  WindowOcclusionBehavior2["PAUSE_AND_WARN"] = "pause_and_warn";
+  return WindowOcclusionBehavior2;
+})(WindowOcclusionBehavior || {});
+class SettingsStore {
+  static instance;
+  store;
+  static getInstance() {
+    if (!SettingsStore.instance) {
+      SettingsStore.instance = new SettingsStore();
+    }
+    return SettingsStore.instance;
+  }
+  constructor() {
+    const defaults = {
+      isFirstLaunch: true,
+      //  首次启动默认为 true，用户确认后设为 false
+      tftMode: TFTMode.NORMAL,
+      //  默认是匹配模式
+      logMode: LogMode.SIMPLE,
+      //  默认是简略日志模式
+      logAutoCleanThreshold: 500,
+      //  默认超过 500 条时自动清理
+      toggleHotkeyAccelerator: "F1",
+      //  默认快捷键是 F1
+      stopAfterGameHotkeyAccelerator: "F2",
+      //  默认快捷键是 F2
+      showDebugPage: false,
+      //  默认隐藏调试页面
+      windowOcclusionBehavior: "auto_focus",
+      //  默认自动聚焦游戏窗口
+      window: {
+        bounds: null,
+        //  第一次启动，默认为null
+        isMaximized: false
+        //  默认不最大化窗口
+      },
+      selectedLineupIds: []
+      //  默认没有选中任何阵容
+    };
+    this.store = new Store({ defaults });
+  }
+  /**
+   * 获取配置项（支持点号路径访问嵌套属性）
+   * @param key 配置 key，支持 "window.bounds" 这样的点号路径
+   * @returns 对应的配置值
+   * 
+   * @example
+   * settingsStore.get('tftMode')           // 返回 TFTMode
+   * settingsStore.get('window')            // 返回整个 window 对象
+   * settingsStore.get('window.bounds')     // 返回 WindowBounds | null
+   * settingsStore.get('window.isMaximized') // 返回 boolean
+   */
+  get(key) {
+    return this.store.get(key);
+  }
+  /**
+   * 设置配置项（支持点号路径访问嵌套属性）
+   * @param key 配置 key，支持 "window.bounds" 这样的点号路径
+   * @param value 要设置的值
+   * 
+   * @example
+   * settingsStore.set('tftMode', TFTMode.CLASSIC)
+   * settingsStore.set('window.isMaximized', true)
+   * settingsStore.set('window.bounds', { x: 0, y: 0, width: 800, height: 600 })
+   */
+  set(key, value) {
+    this.store.set(key, value);
+  }
+  getRawStore() {
+    return this.store;
+  }
+  /**
+   * 【批量设置】
+   * (类型安全) 一次性写入 *多个* 设置项。
+   * @param settings 要合并的设置对象 (Partial 意味着 "部分的", 允许你只传一个子集)
+   */
+  setMultiple(settings) {
+    this.store.set(settings);
+  }
+  //  返回的是unsubscribe，方便取消订阅
+  onDidChange(key, callback) {
+    return this.store.onDidChange(key, callback);
+  }
+}
+const settingsStore = SettingsStore.getInstance();
 class TftOperator {
   static instance;
   /** 游戏窗口左上角坐标 */
@@ -10952,9 +11267,11 @@ class TftOperator {
   // 公共接口 (Public API)
   // ============================================================================
   /**
-   * 初始化操作器
-   * @description 计算游戏窗口位置，LOL 窗口默认居中显示
+   * 初始化操作器（同步版本，保持向后兼容）
+   * @description 使用屏幕中心计算窗口位置（假设窗口居中）
+   *              新代码应优先使用 initAsync() 获取精确的窗口位置
    * @returns 是否初始化成功
+   * @deprecated 建议使用 initAsync() 方法获取精确的窗口位置
    */
   init() {
     try {
@@ -10971,11 +11288,86 @@ class TftOperator {
       screenCapture.setGameWindowOrigin(this.gameWindowRegion);
       mouseController.setGameWindowOrigin(this.gameWindowRegion);
       logger.info(`[TftOperator] 屏幕尺寸: ${screenWidth}x${screenHeight}`);
-      logger.info(`[TftOperator] 游戏基准点: (${originX}, ${originY})`);
+      logger.info(`[TftOperator] 游戏基准点(居中假设): (${originX}, ${originY})`);
       return true;
     } catch (e) {
       logger.error(`[TftOperator] 初始化失败: ${e.message}`);
       this.gameWindowRegion = null;
+      return false;
+    }
+  }
+  /**
+   * 异步初始化操作器（推荐）
+   * @description 使用 WindowFinder 动态查找游戏窗口位置
+   *              支持窗口非居中的情况，更加精确
+   * @returns 是否初始化成功
+   */
+  async initAsync() {
+    try {
+      const findResult = await windowFinder.findGameWindow(true);
+      if (!findResult.found || !findResult.origin) {
+        logger.warn(`[TftOperator] 未找到游戏窗口，回退到居中计算`);
+        return this.init();
+      }
+      this.gameWindowRegion = findResult.origin;
+      screenCapture.setGameWindowOrigin(this.gameWindowRegion);
+      mouseController.setGameWindowOrigin(this.gameWindowRegion);
+      logger.info(
+        `[TftOperator] 游戏基准点(动态检测): (${this.gameWindowRegion.x}, ${this.gameWindowRegion.y}) 窗口: "${findResult.title}"`
+      );
+      return true;
+    } catch (e) {
+      logger.error(`[TftOperator] 异步初始化失败: ${e.message}`);
+      return this.init();
+    }
+  }
+  /**
+   * 更新窗口位置
+   * @description 检测窗口位置是否变化，如果变化则更新基准点
+   *              用于处理用户移动窗口的情况
+   * @returns 窗口状态结果
+   */
+  async updateWindowPosition() {
+    const status = await windowFinder.checkWindowStatus(this.gameWindowRegion ?? void 0);
+    if (status.exists && status.positionChanged && status.currentOrigin) {
+      this.gameWindowRegion = status.currentOrigin;
+      screenCapture.setGameWindowOrigin(this.gameWindowRegion);
+      mouseController.setGameWindowOrigin(this.gameWindowRegion);
+      logger.info(
+        `[TftOperator] 窗口位置已更新: (${this.gameWindowRegion.x}, ${this.gameWindowRegion.y})`
+      );
+    }
+    return status;
+  }
+  /**
+   * 确保窗口就绪（用于操作前检查）
+   * @description 检查窗口是否在前台，根据配置决定处理方式：
+   *              - AUTO_FOCUS: 自动聚焦窗口后继续
+   *              - PAUSE_AND_WARN: 返回 false，由上层暂停并提醒用户
+   * @returns true 表示窗口已就绪可以操作，false 表示需要暂停等待
+   */
+  async ensureWindowReady() {
+    const status = await this.updateWindowPosition();
+    if (!status.exists) {
+      logger.warn("[TftOperator] 游戏窗口不存在");
+      return false;
+    }
+    if (status.isForeground) {
+      return true;
+    }
+    const behavior = settingsStore.get("windowOcclusionBehavior");
+    if (behavior === WindowOcclusionBehavior.AUTO_FOCUS) {
+      logger.info("[TftOperator] 窗口未在前台，正在自动聚焦...");
+      const focused = await windowFinder.focusGameWindow();
+      if (focused) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return true;
+      } else {
+        logger.warn("[TftOperator] 自动聚焦失败");
+        return false;
+      }
+    } else {
+      logger.warn("[TftOperator] 窗口未在前台，等待用户切换");
       return false;
     }
   }
@@ -13011,6 +13403,11 @@ class GameStageMonitor extends EventEmitter {
    */
   async checkStage() {
     try {
+      const windowReady = await tftOperator.ensureWindowReady();
+      if (!windowReady) {
+        this.emit("windowNotReady");
+        return;
+      }
       const stageResult = await tftOperator.getGameStage();
       const { type, stageText } = stageResult;
       if (type === GameStageType.UNKNOWN || !stageText) {
@@ -13107,91 +13504,6 @@ class GameStageMonitor extends EventEmitter {
   }
 }
 const gameStageMonitor = GameStageMonitor.getInstance();
-var LogMode = /* @__PURE__ */ ((LogMode2) => {
-  LogMode2["SIMPLE"] = "SIMPLE";
-  LogMode2["DETAILED"] = "DETAILED";
-  return LogMode2;
-})(LogMode || {});
-class SettingsStore {
-  static instance;
-  store;
-  static getInstance() {
-    if (!SettingsStore.instance) {
-      SettingsStore.instance = new SettingsStore();
-    }
-    return SettingsStore.instance;
-  }
-  constructor() {
-    const defaults = {
-      isFirstLaunch: true,
-      //  首次启动默认为 true，用户确认后设为 false
-      tftMode: TFTMode.NORMAL,
-      //  默认是匹配模式
-      logMode: LogMode.SIMPLE,
-      //  默认是简略日志模式
-      logAutoCleanThreshold: 500,
-      //  默认超过 500 条时自动清理
-      toggleHotkeyAccelerator: "F1",
-      //  默认快捷键是 F1
-      stopAfterGameHotkeyAccelerator: "F2",
-      //  默认快捷键是 F2
-      showDebugPage: false,
-      //  默认隐藏调试页面
-      window: {
-        bounds: null,
-        //  第一次启动，默认为null
-        isMaximized: false
-        //  默认不最大化窗口
-      },
-      selectedLineupIds: []
-      //  默认没有选中任何阵容
-    };
-    this.store = new Store({ defaults });
-  }
-  /**
-   * 获取配置项（支持点号路径访问嵌套属性）
-   * @param key 配置 key，支持 "window.bounds" 这样的点号路径
-   * @returns 对应的配置值
-   * 
-   * @example
-   * settingsStore.get('tftMode')           // 返回 TFTMode
-   * settingsStore.get('window')            // 返回整个 window 对象
-   * settingsStore.get('window.bounds')     // 返回 WindowBounds | null
-   * settingsStore.get('window.isMaximized') // 返回 boolean
-   */
-  get(key) {
-    return this.store.get(key);
-  }
-  /**
-   * 设置配置项（支持点号路径访问嵌套属性）
-   * @param key 配置 key，支持 "window.bounds" 这样的点号路径
-   * @param value 要设置的值
-   * 
-   * @example
-   * settingsStore.set('tftMode', TFTMode.CLASSIC)
-   * settingsStore.set('window.isMaximized', true)
-   * settingsStore.set('window.bounds', { x: 0, y: 0, width: 800, height: 600 })
-   */
-  set(key, value) {
-    this.store.set(key, value);
-  }
-  getRawStore() {
-    return this.store;
-  }
-  /**
-   * 【批量设置】
-   * (类型安全) 一次性写入 *多个* 设置项。
-   * @param settings 要合并的设置对象 (Partial 意味着 "部分的", 允许你只传一个子集)
-   */
-  setMultiple(settings) {
-    this.store.set(settings);
-  }
-  //  返回的是unsubscribe，方便取消订阅
-  onDidChange(key, callback) {
-    return this.store.onDidChange(key, callback);
-  }
-}
-const settingsStore = SettingsStore.getInstance();
 class LineupLoader {
   static instance;
   /** 已加载的阵容配置 Map<阵容ID, 阵容配置> */
