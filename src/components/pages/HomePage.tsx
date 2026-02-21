@@ -11,7 +11,10 @@ import {toast} from "../toast/toast-core.ts";
 import {SummonerInfo} from "../../../src-backend/lcu/utils/LCUProtocols.ts";
 import {TFTMode} from "../../../src-backend/TFTProtocol.ts";
 import {LogMode} from "../../../src-backend/types/AppTypes.ts";
+<<<<<<< HEAD
 import {ThemeToggleButton} from "../ThemeToggleButton.tsx";  // 喵~ 导入主题切换按钮
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 
 // 导入 APP 图标（让 Vite 正确处理资源路径）
 import appIconUrl from '../../../public/icon.png';
@@ -30,6 +33,7 @@ const PageWrapper = styled.div<{ theme: ThemeType }>`
   text-align: center;
   height: 100%;
   overflow: hidden;
+<<<<<<< HEAD
   position: relative;  /* 喵~ 为了让 ThemeToggleContainer 绝对定位 */
 `;
 
@@ -39,6 +43,8 @@ const ThemeToggleContainer = styled.div`
   top: ${props => props.theme.spacing.medium};
   right: ${props => props.theme.spacing.medium};
   z-index: 100;  /* 确保在其他内容之上 */
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 `;
 
 // ============================================
@@ -1071,11 +1077,14 @@ export const HomePage = () => {
 
     return (
         <PageWrapper>
+<<<<<<< HEAD
             {/* 喵~ 主题切换按钮 - 固定在右上角 */}
             <ThemeToggleContainer>
                 <ThemeToggleButton />
             </ThemeToggleContainer>
 
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             {/* 召唤师信息区域 */}
             <SummonerSection>
                 {isLoading ? (

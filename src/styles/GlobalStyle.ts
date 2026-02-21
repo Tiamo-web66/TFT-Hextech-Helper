@@ -16,9 +16,12 @@ export const GlobalStyle = createGlobalStyle`
   html {
     // 更平滑的滚动体验
     scroll-behavior: smooth;
+<<<<<<< HEAD
     /* Firefox 全局滚动条颜色设置 */
     scrollbar-width: thin;
     scrollbar-color: ${props => props.theme.colors.border} transparent;
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
   }
 
   /*
@@ -42,6 +45,7 @@ export const GlobalStyle = createGlobalStyle`
     /* 确保应用在视口高度不足时，也能撑满整个屏幕 */
     min-height: 100vh;
   }
+<<<<<<< HEAD
 
   /* 全局滚动条样式（Chromium/Electron） */
   *::-webkit-scrollbar {
@@ -61,4 +65,6 @@ export const GlobalStyle = createGlobalStyle`
   *::-webkit-scrollbar-thumb:hover {
     background-color: ${props => props.theme.colors.textSecondary};
   }
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 `

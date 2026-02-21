@@ -14,4 +14,7 @@ export * from "./input";
 
 // 工具模块
 export * from "./utils/GameStageParser";
+<<<<<<< HEAD
 export * from "./utils/WindowFinder";
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe

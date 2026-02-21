@@ -3,7 +3,11 @@ import styled, { keyframes } from 'styled-components';
 import {ThemeType} from "../../styles/theme.ts";
 import {toast} from "../toast/toast-core.ts";
 import { logStore, LogAutoCleanThreshold } from "../../stores/logStore.ts";
+<<<<<<< HEAD
 import { settingsStore, WindowOcclusionBehavior } from "../../stores/settingsStore.ts"; // 全局设置状态
+=======
+import { settingsStore } from "../../stores/settingsStore.ts"; // 全局设置状态
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 
 // -------------------------------------------------------------------
 // ✨ 样式组件定义 (Styled Components Definitions) ✨
@@ -315,7 +319,11 @@ const TipsCard = styled.div<{ theme: ThemeType }>`
       position: relative;
       padding-left: 20px;
       margin-bottom: 8px;
+<<<<<<< HEAD
       color: ${props => props.theme.colors.textSecondary};
+=======
+      color: ${props => props.theme.colors.secondaryText};
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
       font-size: ${props => props.theme.fontSizes.small};
       line-height: 1.6;
       
@@ -409,12 +417,16 @@ const SettingsPage = () => {
     
     // 调试页面显示设置
     const [showDebugPage, setShowDebugPage] = useState(false);
+<<<<<<< HEAD
 
     // 窗口遮挡行为设置
     const [windowOcclusionBehavior, setWindowOcclusionBehavior] = useState<WindowOcclusionBehavior>(
         WindowOcclusionBehavior.AUTO_FOCUS
     );
 
+=======
+    
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
     // 版本与更新
     const [currentVersion, setCurrentVersion] = useState<string>('');
     const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -425,6 +437,7 @@ const SettingsPage = () => {
             // 加载日志阈值
             await logStore.refreshThreshold();
             setLogAutoCleanThreshold(logStore.getThreshold());
+<<<<<<< HEAD
 
             // 加载快捷键设置
             const hotkey = await window.util.getToggleHotkey();
@@ -439,17 +452,40 @@ const SettingsPage = () => {
             setShowDebugPage(settingsStore.getShowDebugPage());
             setWindowOcclusionBehavior(settingsStore.getWindowOcclusionBehavior());
 
+=======
+            
+            // 加载快捷键设置
+            const hotkey = await window.util.getToggleHotkey();
+            setToggleHotkey(hotkey);
+            
+            // 加载"本局结束后停止"快捷键设置
+            const stopAfterGameHk = await window.util.getStopAfterGameHotkey();
+            setStopAfterGameHotkey(stopAfterGameHk);
+            
+            // 加载调试页面显示设置（通过 settingsStore）
+            await settingsStore.init();
+            setShowDebugPage(settingsStore.getShowDebugPage());
+            
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             // 加载当前版本号
             const version = await window.util.getAppVersion();
             setCurrentVersion(version);
         };
         loadSettings();
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
         // 订阅 settingsStore 变化（其他组件修改时同步更新）
         const unsubscribe = settingsStore.subscribe((settings) => {
             setShowDebugPage(settings.showDebugPage);
         });
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
         return unsubscribe;
     }, []);
     
@@ -562,6 +598,7 @@ const SettingsPage = () => {
         await logStore.setThreshold(value);
     };
 
+<<<<<<< HEAD
     // 处理窗口遮挡行为变化
     const handleWindowOcclusionBehaviorChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value as WindowOcclusionBehavior;
@@ -573,6 +610,8 @@ const SettingsPage = () => {
         );
     };
 
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
     // 点击备份按钮的逻辑
     const handleBackup = async () => {
         console.log("开始备份游戏设置...");
@@ -654,7 +693,10 @@ const SettingsPage = () => {
             <TipsCard>
                 <ul>
                     <li><strong>游戏语言必须设置为中文</strong>，否则无法正确识别棋子</li>
+<<<<<<< HEAD
                     <li>分辨率必须设置<strong>1024 × 768</strong>，如果分辨率不同，所有坐标都会错位</li>
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
                     <li><strong>推荐使用默认棋盘皮肤</strong>，已针对默认棋盘优化，能加快棋子识别速度</li>
                 </ul>
             </TipsCard>
@@ -696,6 +738,7 @@ const SettingsPage = () => {
                     </HotkeyInput>
                 </SettingItem>
             </SettingsCard>
+<<<<<<< HEAD
 
             {/* 窗口行为设置 */}
             <SettingsHeader>
@@ -719,6 +762,9 @@ const SettingsPage = () => {
                 </SettingItem>
             </SettingsCard>
 
+=======
+        
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             {/* 日志设置 */}
             <SettingsHeader>
                 日志
@@ -797,7 +843,11 @@ const SettingsPage = () => {
                 关于
             </SettingsHeader>
             <SettingsCard>
+<<<<<<< HEAD
                 {/* <SettingItem>
+=======
+                <SettingItem>
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
                     <SettingInfo>
                         <SettingText>
                             <h3>项目地址</h3>
@@ -814,7 +864,11 @@ const SettingsPage = () => {
                         </svg>
                         GitHub ⭐
                     </GitHubButton>
+<<<<<<< HEAD
                 </SettingItem> */}
+=======
+                </SettingItem>
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
                 <SettingItem>
                     <SettingInfo>
                         <SettingText>
@@ -831,7 +885,11 @@ const SettingsPage = () => {
 
             {/* 作者署名 */}
             <AuthorBanner>
+<<<<<<< HEAD
                 本软件由神奇的 TiAmo 倾力打造 ( •̀ ω •́ )✧ ✨
+=======
+                本软件由神奇的 <a href="https://github.com/WJZ-P" target="_blank" rel="noopener noreferrer">WJZ_P</a> 倾力打造 ( •̀ ω •́ )✧ ✨
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             </AuthorBanner>
         </PageWrapper>
     );

@@ -59,8 +59,11 @@ export interface GameStageEvents {
     stageChange: [GameStageEvent];
     /** 战斗阶段开始事件（检测到"战斗环节"文字） */
     fightingStart: [];
+<<<<<<< HEAD
     /** 窗口未就绪事件（窗口被遮挡或不在前台，且配置为暂停模式） */
     windowNotReady: [];
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
 }
 
 // ============================================================================
@@ -188,6 +191,7 @@ export class GameStageMonitor extends EventEmitter {
      */
     private async checkStage(): Promise<void> {
         try {
+<<<<<<< HEAD
             // 0. 首先检查窗口是否就绪（存在且在前台）
             const windowReady = await tftOperator.ensureWindowReady();
             if (!windowReady) {
@@ -196,6 +200,8 @@ export class GameStageMonitor extends EventEmitter {
                 return;
             }
 
+=======
+>>>>>>> d486bf613bb0678ec82dc354105f86e17488dffe
             // 1. 获取当前游戏阶段
             const stageResult: GameStageResult = await tftOperator.getGameStage();
             const { type, stageText } = stageResult;
